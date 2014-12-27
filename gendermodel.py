@@ -62,7 +62,7 @@ header = test_file_object.next()
 # Finally, loop through each row in the train file, and look in column index [3] (which is 'Sex')
 # Write out the PassengerId, and my prediction.
 
-predictions_file = open("data/gendermodel.csv", "wb")
+predictions_file = open("submissions/gendermodel.csv", "wb")
 predictions_file_object = csv.writer(predictions_file)
 predictions_file_object.writerow(["PassengerId", "Survived"])	# write the column headers
 for row in test_file_object:									# For each row in test file,
