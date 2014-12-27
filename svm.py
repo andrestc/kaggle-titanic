@@ -2,7 +2,10 @@
 
 import pandas as pd
 import numpy as np
-from sklearn import svm
+from sklearn.cross_validation import train_test_split
+from sklearn.grid_search import GridSearchCV
+from sklearn.metrics import classification_report
+from sklearn.svm import SVC
 import csv as csv
 
 def handle_features(dataframe):
@@ -39,6 +42,49 @@ def writeSubmissionFile(file_name, ids, output):
     open_file_object.writerows(zip(ids, output))
     predictions_file.close()
 
+
+def fit_model_parameters(X, y):
+    # Split the dataset in two equal parts
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0)
+
+    # Set the parameters by cross-validation
+    tuned_parameters = [{'kernel': ['rbf'], 'gamma': [1e-3, 1e-4],
+                         'C': [1, 10, 100, 1000]}]
+
+    scores = ['precision']
+    best = None
+    for score in scores:
+        print("# Tuning hyper-parameters for %s" % score)
+        print()
+
+        clf = GridSearchCV(SVC(C=1), tuned_parameters, cv=5, scoring=score)
+        clf.fit(X_train, y_train)
+
+        best = clf.best_estimator_
+
+        print("Best parameters set found on development set:")
+        print()
+        print(clf.best_estimator_)
+        print()
+        print("Grid scores on development set:")
+        print()
+        for params, mean_score, scores in clf.grid_scores_:
+            print("%0.3f (+/-%0.03f) for %r"
+                  % (mean_score, scores.std() / 2, params))
+        print()
+
+        print("Detailed classification report:")
+        print()
+        print("The model is trained on the full development set.")
+        print("The scores are computed on the full evaluation set.")
+        print()
+        y_true, y_pred = y_test, clf.predict(X_test)
+        print(classification_report(y_true, y_pred))
+        print()
+
+    return best
+
+
 train_df = pd.read_csv('data/train.csv', header=0)
 test_df = pd.read_csv('data/test.csv', header=0)
 ids = test_df['PassengerId'].values
@@ -49,9 +95,8 @@ test_df = handle_features(test_df)
 train_data = train_df.values
 test_data = test_df.values
 
-print 'Training...'
-clf = svm.SVC()
-clf.fit(train_data[0::,1::], train_data[0::,0])
+print 'Fitting model parameters..'
+clf = fit_model_parameters(train_data[0::,1::], train_data[0::,0])
 
 print 'Predicting...'
 output = clf.predict(test_data).astype(int)
